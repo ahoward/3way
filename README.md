@@ -3,7 +3,15 @@
 [![installs](https://img.shields.io/github/downloads/ahoward/3way/total?label=installs)](https://github.com/ahoward/3way/releases)
 [![stars](https://img.shields.io/github/stars/ahoward/3way?style=flat)](https://github.com/ahoward/3way/stargazers)
 
+<p align="center">
+  <img src="assets/logo.gif" width="280" alt="3WAY — the third walks">
+</p>
+
 **Two stay. One does not remember you in the morning.**
+
+<p align="center">
+  <img src="assets/morning.gif" width="720" alt="the critic does not leave a number">
+</p>
 
 A ménage à CLI. The **coder** spends the night (session continues, OAuth clothes on the floor). The **critic** is a stranger (`-p`, no `--continue`, no number). You are the **driver**. You do not get in the bed.
 
