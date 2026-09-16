@@ -1,0 +1,26 @@
+# 3way
+
+> Two stay. One does not remember you in the morning.
+
+A structured mini-harness: three seats (driver, coder, critic). Coder continues in tmux or screen. Critic is a fresh CLI process. Driver is a human or agent that does not implement. Independence is memory policy, not vendor.
+
+## Docs
+
+- [SKILL.md](https://raw.githubusercontent.com/ahoward/3way/main/skill/SKILL.md)
+- [README](https://raw.githubusercontent.com/ahoward/3way/main/README.md)
+- [Site](https://ahoward.github.io/3way/)
+
+## Install (counted)
+
+```
+curl -fsSL https://github.com/ahoward/3way/releases/latest/download/install.sh | sh
+```
+
+GitHub release asset downloads are the install counter.
+
+## Defaults
+
+- mux: tmux (or screen)
+- coder: continue, model fable else opus
+- critic: fresh, model opus, `claude -p --no-session-persistence`
+- verdicts: AGREE | DISAGREE EVIDENCE: file:line | DISAGREE CONCERN: why

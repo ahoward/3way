@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3way — two stay. one does not remember you in the morning.</title>
+  <link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt">
+  <style>
+    :root { --bg:#0a0a0a; --fg:#e8e0d5; --hot:#ff2d6a; --ok:#7dffb3; --dim:#6a645c; }
+    * { box-sizing: border-box; }
+    html, body { margin:0; background:var(--bg); color:var(--fg);
+      font: 18px/1.45 "IBM Plex Mono", ui-monospace, monospace; }
+    main { max-width: 40rem; margin: 12vh auto; padding: 0 1.5rem; }
+    h1 { font-size: clamp(3rem, 12vw, 6rem); letter-spacing: -0.08em; margin: 0;
+      color: var(--hot); font-weight: 700; }
+    .tag { color: var(--ok); margin: 0.5rem 0 2rem; }
+    p { margin: 0 0 1rem; }
+    a { color: var(--hot); }
+    code, pre { font: inherit; color: var(--ok); }
+    pre { border: 1px solid #222; padding: 1rem; overflow-x: auto; }
+    .dim { color: var(--dim); font-size: 0.85rem; margin-top: 3rem; }
+    .seats { list-style: none; padding: 0; }
+    .seats li { margin: 0.4rem 0; }
+    .seats b { color: var(--hot); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>3way</h1>
+  <p class="tag">two stay. one does not remember you in the morning.</p>
+  <p>A ménage à CLI. The coder spends the night. The critic is a stranger. You watch.</p>
+  <ul class="seats">
+    <li><b>coder</b> — continue. tmux or screen. fable, else opus.</li>
+    <li><b>critic</b> — fresh. <code>-p</code>. no <code>--continue</code>. opus.</li>
+    <li><b>driver</b> — not in the bed.</li>
+  </ul>
+  <p>Independence is memory, not vendor. Same model twice is still two seats.</p>
+  <pre>curl -fsSL https://github.com/ahoward/3way/releases/latest/download/install.sh | sh</pre>
+  <p>That URL is the counter. GitHub release downloads. Clone does not count.</p>
+  <p>
+    <a href="https://github.com/ahoward/3way">github</a>
+    · <a href="https://github.com/ahoward/3way/blob/main/skill/SKILL.md">skill</a>
+    · <a href="llms.txt">llms.txt</a>
+  </p>
+  <p class="dim">ahoward · MIT · do not come in the same session twice</p>
+</main>
+</body>
+</html>
