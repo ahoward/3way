@@ -214,6 +214,69 @@ def morning_frame(W, H, phase):
         d.rectangle([int(W*0.06), int(H*0.9), int(W*0.06)+34, int(H*0.9)+7], fill=GREEN)
     return canvas
 
+# ── afterglow: the morning-after room, neon-graphic (1280x720) ──────────────
+# Two stay, one walks out. A reclining silhouette in the bed (afterglow), the leaving figure
+# rim-lit in the dawn doorway, two laptops glowing green code. Same neon-boudoir palette.
+def afterglow(W, H):
+    a = np.zeros((H, W, 3), np.uint8)
+    yy, xx = np.mgrid[0:H, 0:W]
+    # base room haze
+    a[...,0]+=14; a[...,2]+=12
+    # neon window glow, upper-left (the VACANCY sign bleeding through blinds)
+    win = np.clip(1 - np.sqrt(((xx-W*0.20)/(W*0.24))**2 + ((yy-H*0.28)/(H*0.30))**2), 0, 1)**1.5
+    a[...,0]=np.clip(a[...,0]+220*win,0,255); a[...,1]=np.clip(a[...,1]+30*win,0,255); a[...,2]=np.clip(a[...,2]+150*win,0,255)
+    # dawn doorway, right
+    dr = np.clip(1 - np.sqrt(((xx-W*0.88)/(W*0.13))**2 + ((yy-H*0.5)/(H*0.44))**2), 0, 1)**1.7
+    a[...,0]=np.clip(a[...,0]+235*dr,0,255); a[...,1]=np.clip(a[...,1]+140*dr,0,255); a[...,2]=np.clip(a[...,2]+205*dr,0,255)
+    img = Image.fromarray(a.astype(np.uint8))
+    d = ImageDraw.Draw(img)
+
+    # venetian-blind stripes over the window glow (thin dark bars)
+    for i in range(9):
+        y = int(H*0.06 + i*H*0.028)
+        d.rectangle([int(W*0.03), y, int(W*0.37), y+int(H*0.010)], fill=(8,2,8))
+    # neon VACANCY bar in the window
+    d.rectangle([int(W*0.09), int(H*0.10), int(W*0.31), int(H*0.145)], fill=(255,60,170))
+
+    # the bed — a low slab, warm magenta sheet
+    bx0,by0,bx1,by1 = int(W*0.04), int(H*0.62), int(W*0.60), int(H*0.98)
+    bcy = (by0+by1)//2
+    d.rectangle([bx0,by0,bx1,by1], fill=(64,22,46))
+    d.rectangle([bx0,by0,bx1,by0+int(H*0.03)], fill=(96,36,68))   # sheet edge highlight
+    # pillow (head end, left)
+    d.rounded_rectangle([bx0+int(W*0.015),by0+int(H*0.02),bx0+int(W*0.15),by0+int(H*0.12)], radius=16, fill=(128,66,102))
+
+    # reclining silhouette lying ON the bed (the one who stays) — rotate the standing curve 90°.
+    S = int((by1-by0)*1.7)
+    rec = silhouette(S, sway=0.0, hair=0.4, scale=0.86).rotate(90, expand=True)   # head → left (pillow)
+    sil,_ = tinted(rec.convert("L"), max(rec.size), (170,30,100), (70,12,50), CYAN)
+    sil = sil.crop((0,0,rec.size[0],rec.size[1]))
+    # center the figure box on the bed, nudged toward the pillow end
+    px = bx0 + int(W*0.02); py = bcy - rec.size[1]//2
+    layer = Image.new("RGB",(W,H),(0,0,0)); layer.paste(sil, (px, py))
+    img = ImageChops.lighter(img, layer)
+
+    # the leaving figure, rim-lit, fully in the dawn doorway (she walks out)
+    GS = int(H*0.70)
+    gmask = silhouette(GS, sway=0.015, hair=0.6, scale=0.9)
+    g,_ = tinted(gmask, GS, (150,25,90), (36,6,32), CYAN)
+    gl = Image.new("RGB",(W,H),(0,0,0)); gl.paste(g, (int(W*0.72), int(H*0.18)))
+    img = ImageChops.lighter(img, gl)
+
+    # two laptops glowing green code, on the bed (the coder + the driver)
+    d = ImageDraw.Draw(img)
+    for lx,ly,s in [(0.30,0.66,1.0),(0.47,0.70,0.9)]:
+        w,h = int(W*0.11*s), int(H*0.10*s)
+        x,y = int(W*lx), int(H*ly)
+        scr = Image.new("RGB",(w,h),(6,26,10)); sd=ImageDraw.Draw(scr)
+        for r in range(4):
+            sd.rectangle([4, 4+r*h//5, 4+int(w*(0.7-0.12*r)), 4+r*h//5+max(2,h//12)], fill=(57,255,20))
+        glow = scr.filter(ImageFilter.GaussianBlur(9))
+        gl2 = Image.new("RGB",(W,H),(0,0,0)); gl2.paste(glow,(x-8,y-8)); gl2.paste(scr,(x,y))
+        img = ImageChops.add(img, gl2)
+
+    return img
+
 def main():
     S = 512
     N = 24
@@ -227,7 +290,9 @@ def main():
     mf = [morning_frame(W, H, i/M).convert("P", palette=Image.ADAPTIVE, colors=128) for i in range(M)]
     save_gif(f"{ROOT}/assets/morning.gif", mf, 90)
     morning_frame(W, H, 0.25).convert("RGB").save(f"{ROOT}/assets/morning.jpg", quality=90)
-    print("wrote assets/logo.gif logo.png logo.jpg morning.gif morning.jpg")
+
+    afterglow(1280, 720).convert("RGB").save(f"{ROOT}/assets/afterglow.jpg", quality=90)
+    print("wrote assets/logo.gif logo.png logo.jpg morning.gif morning.jpg afterglow.jpg")
 
 if __name__ == "__main__":
     main()
