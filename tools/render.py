@@ -26,7 +26,7 @@ def rng(seed): return np.random.default_rng(seed)
 # A parametric pin-up curve: for each normalized height t (0 head → 1 foot) a body half-width
 # and a centerline x that sways with the hips (contrapposto). Filled as one smooth polygon,
 # hair as a second blob. `sway` shifts weight hip-to-hip for the walk cycle.
-def silhouette(size, sway=0.0, hair=0.0, scale=1.0):
+def silhouette(size, sway=0.0, hair=0.0, scale=1.0, racy=0.0):
     W = H = size
     img = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(img)
@@ -36,20 +36,24 @@ def silhouette(size, sway=0.0, hair=0.0, scale=1.0):
     # (t, half-width, centerline-offset) — the feminine profile. Head is drawn as a circle
     # separately (below) so the neck starts the polygon. Nipped waist, full hips, long legs.
     # offset builds the S-curve; sway animates the weight shift.
+    # racy (0..1): exaggerate the hourglass (fuller bust/hips, tighter waist) + a cocked-hip
+    # contrapposto lean (upper body leans one way, hips kick the other = a pin-up S).
+    bust = 1 + 0.20*racy; waist = 1 - 0.28*racy; hip = 1 + 0.24*racy
+    lean = 0.030*racy    # static hip-cock (added to sway)
     prof = [
-        (0.115, 0.030, 0.00),                         # neck
-        (0.150, 0.088, 0.00),                         # shoulders
-        (0.210, 0.108, 0.005),                        # bust (full)
-        (0.255, 0.098, 0.010),                        # under-bust
-        (0.360, 0.052, 0.020),                        # nipped waist (tightest)
-        (0.430, 0.088, 0.028),                        # hip rise
-        (0.500, 0.140, 0.032),                        # hip crest
-        (0.560, 0.150, 0.030),                        # seat (fullest)
-        (0.650, 0.110, 0.018),                        # thigh
-        (0.760, 0.066, 0.006),                        # knee
-        (0.860, 0.045, 0.000),                        # calf
-        (0.940, 0.028, -0.004),                       # ankle
-        (1.000, 0.052, -0.006),                       # heel/foot
+        (0.115, 0.030,               0.00 - 0.010*racy),   # neck (leans back)
+        (0.150, 0.088,               0.00 - 0.008*racy),   # shoulders
+        (0.210, 0.108*bust,          0.005),               # bust (full)
+        (0.255, 0.098*bust,          0.010),               # under-bust
+        (0.360, 0.052*waist,         0.020 + 0.010*racy),  # nipped waist (tightest)
+        (0.430, 0.088*hip,           0.028 + lean),        # hip rise
+        (0.500, 0.140*hip,           0.032 + lean),        # hip crest (kicks out)
+        (0.560, 0.150*hip,           0.030 + lean*0.9),    # seat (fullest)
+        (0.650, 0.110*(1+0.12*racy), 0.018 + lean*0.5),    # thigh
+        (0.760, 0.066,               0.006),               # knee
+        (0.860, 0.045,               0.000),               # calf
+        (0.940, 0.028,              -0.004),               # ankle
+        (1.000, 0.052,              -0.006),               # heel/foot
     ]
     def curve(pts):
         ts = np.array([p[0] for p in pts]); xs = np.array([p[1] for p in pts]); os_ = np.array([p[2] for p in pts])
@@ -157,8 +161,8 @@ def cursor(size, on):
 
 # ── frame compositor ────────────────────────────────────────────────────────
 # place a scaled silhouette onto a full-size black layer at (cx_frac, top_frac)
-def figure(size, hpx, cxf, topf, sway=0.0, hair=0.5, cols=(HOTPINK, PURPLE)):
-    m = silhouette(hpx, sway=sway, hair=hair, scale=0.9)
+def figure(size, hpx, cxf, topf, sway=0.0, hair=0.5, cols=(HOTPINK, PURPLE), racy=0.0):
+    m = silhouette(hpx, sway=sway, hair=hair, scale=0.9, racy=racy)
     s,_ = tinted(m, hpx, cols[0], cols[1], CYAN)
     lay = Image.new("RGB", (size, size), (0,0,0))
     lay.paste(s, (int(size*cxf - hpx*0.5), int(size*topf)))
@@ -180,7 +184,8 @@ def frame(size, phase):
         sway = 0.012*math.sin(phase*2*math.pi + i*2.1)
         hair = 0.5+0.5*math.sin(phase*2*math.pi + hp*6.28)
         cols = (HOTPINK, PURPLE) if i==1 else (MAGENTA, (60,10,44))
-        out = ImageChops.lighter(out, figure(size, int(size*hf), cxf, topf, sway, hair, cols))
+        racy = 1.0 if i==1 else 0.0   # the center one is the show
+        out = ImageChops.lighter(out, figure(size, int(size*hf), cxf, topf, sway, hair, cols, racy))
     wm,_ = wordmark(size, flick=flick)
     cur = cursor(size, on=(math.sin(phase*2*math.pi*2) > -0.2))
     out = ImageChops.lighter(out, wm)             # wordmark rides on top, letters cross them
