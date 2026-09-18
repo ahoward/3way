@@ -156,19 +156,34 @@ def cursor(size, on):
     return layer
 
 # ── frame compositor ────────────────────────────────────────────────────────
+# place a scaled silhouette onto a full-size black layer at (cx_frac, top_frac)
+def figure(size, hpx, cxf, topf, sway=0.0, hair=0.5, cols=(HOTPINK, PURPLE)):
+    m = silhouette(hpx, sway=sway, hair=hair, scale=0.9)
+    s,_ = tinted(m, hpx, cols[0], cols[1], CYAN)
+    lay = Image.new("RGB", (size, size), (0,0,0))
+    lay.paste(s, (int(size*cxf - hpx*0.5), int(size*topf)))
+    return lay
+
 def frame(size, phase):
     bg = background(size)
     flick = 0.7 + 0.3*math.sin(phase*2*math.pi*3) + (0.25 if rng(int(phase*97)).random()>0.85 else 0)
     flick = min(1.15, flick)
-    sway = 0.012*math.sin(phase*2*math.pi)
-    hair = 0.5+0.5*math.sin(phase*2*math.pi + 1.0)
-    mask = silhouette(size, sway=sway, hair=hair, scale=0.92)
-    sil,_ = tinted(mask, size, HOTPINK, PURPLE, CYAN)
+    # THREE humans — it's a 3way: a trio behind the wordmark. Center one forward+tallest, two
+    # flanking, each swaying on its own phase so the group breathes.
+    trio = [
+        (0.145, 0.34, 0.50, 0.9),   # left  (cxf, topf, hpx-frac, hair-phase)
+        (0.500, 0.10, 1.00, 0.0),   # center (tallest, forward)
+        (0.855, 0.34, 0.50, 0.6),   # right
+    ]
+    out = bg
+    for i,(cxf, topf, hf, hp) in enumerate(trio):
+        sway = 0.012*math.sin(phase*2*math.pi + i*2.1)
+        hair = 0.5+0.5*math.sin(phase*2*math.pi + hp*6.28)
+        cols = (HOTPINK, PURPLE) if i==1 else (MAGENTA, (60,10,44))
+        out = ImageChops.lighter(out, figure(size, int(size*hf), cxf, topf, sway, hair, cols))
     wm,_ = wordmark(size, flick=flick)
     cur = cursor(size, on=(math.sin(phase*2*math.pi*2) > -0.2))
-    # order: bg → silhouette (behind letters, showing through) → wordmark → cursor
-    out = ImageChops.add(bg, sil)                 # her full neon body
-    out = ImageChops.lighter(out, wm)             # wordmark rides on top, letters cross her
+    out = ImageChops.lighter(out, wm)             # wordmark rides on top, letters cross them
     out = ImageChops.add(out, wm.point(lambda p:int(p*0.25)))  # a touch of type bloom
     out = ImageChops.add(out, cur)
     return out
@@ -199,13 +214,19 @@ def morning_frame(W, H, phase):
     S = int(H*0.86 * (1 - 0.18*walk))
     canvas = Image.new("RGB", (W, H), (0,0,0))
     canvas = ImageChops.add(canvas, bg)
+    # the two who STAY — standing at frame-left, softer, watching her go
+    for cxf, hf, ph, cols in [(0.13, 0.60, 0.0, (150,26,92)), (0.25, 0.54, 2.0, (108,18,66))]:
+        hs = int(H*hf); sm = silhouette(hs, sway=0.01*math.sin(phase*6.28+ph), hair=0.5, scale=0.9)
+        st,_ = tinted(sm, hs, cols, (34,6,30), CYAN)
+        sl = Image.new("RGB",(W,H),(0,0,0)); sl.paste(st, (int(W*cxf-hs*0.5), int(H*0.32)))
+        canvas = ImageChops.lighter(canvas, sl)
+    # the one who LEAVES — recedes toward the doorway, hips swaying, rim-lit
     sway = 0.02*math.sin(walk*2*math.pi*2)
     hair = 0.5+0.5*math.sin(walk*2*math.pi*2 + 1.0)
     mask = silhouette(S, sway=sway, hair=hair, scale=0.92)
-    # she's mostly a dark silhouette against the doorway, with a hot rim light
     sil, _ = tinted(mask, S, (150,25,90), (40,6,36), CYAN)
-    x = int(W*0.30 + walk*W*0.34)
-    y = int(H*0.10 + walk*H*0.02)
+    x = int(W*0.46 + walk*W*0.28)
+    y = int(H*0.12 + walk*H*0.02)
     layer = Image.new("RGB", (W, H), (0,0,0)); layer.paste(sil, (x, y))   # figure on black
     canvas = ImageChops.lighter(canvas, layer)                            # add her, no black box
     # blinking green cursor bottom-left — the driver, still at the keyboard
@@ -246,15 +267,17 @@ def afterglow(W, H):
     # pillow (head end, left)
     d.rounded_rectangle([bx0+int(W*0.015),by0+int(H*0.02),bx0+int(W*0.15),by0+int(H*0.12)], radius=16, fill=(128,66,102))
 
-    # reclining silhouette lying ON the bed (the one who stays) — rotate the standing curve 90°.
-    S = int((by1-by0)*1.7)
-    rec = silhouette(S, sway=0.0, hair=0.4, scale=0.86).rotate(90, expand=True)   # head → left (pillow)
-    sil,_ = tinted(rec.convert("L"), max(rec.size), (170,30,100), (70,12,50), CYAN)
-    sil = sil.crop((0,0,rec.size[0],rec.size[1]))
-    # center the figure box on the bed, nudged toward the pillow end
-    px = bx0 + int(W*0.02); py = bcy - rec.size[1]//2
-    layer = Image.new("RGB",(W,H),(0,0,0)); layer.paste(sil, (px, py))
-    img = ImageChops.lighter(img, layer)
+    # TWO reclining silhouettes lying ON the bed (the two who stay) — rotate the standing curve 90°.
+    for k,(sc, yo, cols) in enumerate([
+            (1.7, -0.11, (170,30,100)),    # front sleeper
+            (1.5,  0.10, (120,20,74))]):   # the other, further back / dimmer
+        S = int((by1-by0)*sc)
+        rec = silhouette(S, sway=0.0, hair=0.4, scale=0.86).rotate(90, expand=True)  # head → left (pillow)
+        sil,_ = tinted(rec.convert("L"), max(rec.size), cols, (60,10,44), CYAN)
+        sil = sil.crop((0,0,rec.size[0],rec.size[1]))
+        px = bx0 + int(W*(0.02 + k*0.06)); py = int(bcy + H*yo) - rec.size[1]//2
+        layer = Image.new("RGB",(W,H),(0,0,0)); layer.paste(sil, (px, py))
+        img = ImageChops.lighter(img, layer)
 
     # the leaving figure, rim-lit, fully in the dawn doorway (she walks out)
     GS = int(H*0.70)
